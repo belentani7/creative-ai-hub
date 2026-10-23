@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { addPreset, decodePresets, type CreativePreset } from "@/lib/presets";
+import { useMemo, useState } from "react";
+import { addPreset, decodePresets, persistPresets, type CreativePreset } from "@/lib/presets";
 import {
   ArrowUpRight,
   Check,
@@ -100,11 +100,17 @@ function Home() {
     try { return decodePresets(localStorage.getItem("lucid-presets")); } catch { return []; }
   });
   const [toast, setToast] = useState("");
+  const [storageError, setStorageError] = useState(false);
 
-  useEffect(() => {
-    try { localStorage.setItem("lucid-presets", JSON.stringify(saved)); }
-    catch { /* Storage may be disabled or full; the in-memory editor remains usable. */ }
-  }, [saved]);
+  // Persist only after an explicit user action, never silently on initial render.
+  const updateSaved = (next: CreativePreset[]): boolean => {
+    setSaved(next);
+    let persisted = false;
+    try { persisted = persistPresets(window.localStorage, next); }
+    catch { /* Storage getter itself may be blocked. */ }
+    setStorageError(!persisted);
+    return persisted;
+  };
 
   const filteredTools = useMemo(() => {
     const query = search.toLowerCase().trim();
@@ -151,8 +157,8 @@ function Home() {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       name, media, prompt, idea, style, framing, mood, negative, adultSafe,
     };
-    setSaved((current) => addPreset(current, newPreset));
-    flash("Prompt y ajustes guardados en este navegador");
+    const persisted = updateSaved(addPreset(saved, newPreset));
+    flash(persisted ? "Prompt y ajustes guardados en este navegador" : "Preset disponible solo en esta sesión: no se pudo guardar");
   };
 
   const restorePreset = (item: CreativePreset) => {
@@ -208,7 +214,7 @@ function Home() {
           </div>
         ) : section === "library" ? (
           <div className="page-wrap library-wrap">
-            <div className="page-heading-row"><div><div className="eyebrow"><Layers3 size={14} /> herramientas externas</div><h1>Directorio <em>IA</em></h1><p>Una selección de puertas de entrada web. “Gratis” suele significar créditos, límites o cola.</p></div><div className="search-box"><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar proveedor..." /></div></div>
+            <div className="page-heading-row"><div><div className="eyebrow"><Layers3 size={14} /> herramientas externas</div><h1>Directorio <em>IA</em></h1><p>Una selección de puertas de entrada web. “Gratis” suele significar créditos, límites o cola.</p></div><div className="search-box"><Search size={16} /><label htmlFor="provider-search" className="sr-only">Buscar proveedor</label><input id="provider-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar proveedor..." /></div></div>
             <div className="filter-row">{["Todos", "Imagen", "Vídeo", "Voz", "Música", "Editor"].map((item) => <button key={item} className={toolFilter === item ? "filter-chip selected" : "filter-chip"} aria-pressed={toolFilter === item} onClick={() => setToolFilter(item as MediaType | "Editor" | "Todos")}>{item}</button>)}</div>
             <div className="tool-grid library-grid">{filteredTools.map((tool) => <ToolCard key={tool.name} tool={tool} onOpen={() => flash(`Abriendo ${tool.name}`)} />)}</div>
           </div>
@@ -221,28 +227,28 @@ function Home() {
 
             <section className="studio-grid">
               <div className="composer-card">
-                <div className="card-topline"><div><span className="card-index">01</span><span className="card-kicker">creative brief</span></div><span className="autosave"><span className="status-dot" /> guardado local</span></div>
-                <div className="media-tabs">{mediaTypes.map(({ label, icon: Icon, accent, helper }) => <button key={label} className={media === label ? `media-tab active ${accent}` : "media-tab"} onClick={() => selectMedia(label)}><Icon size={17} /><span>{label}</span><small>{helper}</small></button>)}</div>
-                <div className="field-block"><label>Tu idea base</label><textarea value={idea} onChange={(event) => setIdea(event.target.value)} placeholder="Describe lo que quieres crear..." /></div>
-                <div className="field-row"><div className="field-block"><label>Dirección / estilo</label><div className="select-wrap"><select value={style} onChange={(event) => setStyle(event.target.value)}><option>Editorial cinematográfico</option><option>Realismo naturalista</option><option>3D de autor</option><option>Anime sofisticado</option><option>Documental analógico</option></select><ChevronDown size={15} /></div></div><div className="field-block"><label>Encuadre / formato</label><div className="select-wrap"><select value={framing} onChange={(event) => setFraming(event.target.value)}><option>Retrato / plano medio</option><option>Primer plano íntimo</option><option>Plano general narrativo</option><option>9:16 vertical</option><option>16:9 panorámico</option></select><ChevronDown size={15} /></div></div></div>
-                <div className="field-row"><div className="field-block"><label>Atmósfera</label><input value={mood} onChange={(event) => setMood(event.target.value)} /></div><div className="field-block"><label>Evitar / negative prompt</label><input value={negative} onChange={(event) => setNegative(event.target.value)} /></div></div>
-                <div className="safety-row"><div className="safety-copy"><ShieldCheck size={17} /><div><strong>Marco adulto responsable</strong><span>Solo personas adultas, consentimiento claro y tratamiento no explícito.</span></div></div><button className={adultSafe ? "toggle on" : "toggle"} onClick={() => setAdultSafe(!adultSafe)} aria-label="Activar marco adulto responsable"><span /></button></div>
+                <div className="card-topline"><div><span className="card-index">01</span><span className="card-kicker">creative brief</span></div><span className="autosave"><span className="status-dot" /> guardado manual de presets</span></div>
+                <div className="media-tabs">{mediaTypes.map(({ label, icon: Icon, accent, helper }) => <button key={label} className={media === label ? `media-tab active ${accent}` : "media-tab"} aria-pressed={media === label} onClick={() => selectMedia(label)}><Icon size={17} /><span>{label}</span><small>{helper}</small></button>)}</div>
+                <div className="field-block"><label htmlFor="creative-idea">Tu idea base</label><textarea id="creative-idea" value={idea} onChange={(event) => setIdea(event.target.value)} placeholder="Describe lo que quieres crear..." /></div>
+                <div className="field-row"><div className="field-block"><label htmlFor="creative-style">Dirección / estilo</label><div className="select-wrap"><select id="creative-style" value={style} onChange={(event) => setStyle(event.target.value)}><option>Editorial cinematográfico</option><option>Realismo naturalista</option><option>3D de autor</option><option>Anime sofisticado</option><option>Documental analógico</option></select><ChevronDown size={15} /></div></div><div className="field-block"><label htmlFor="creative-framing">Encuadre / formato</label><div className="select-wrap"><select id="creative-framing" value={framing} onChange={(event) => setFraming(event.target.value)}><option>Retrato / plano medio</option><option>Primer plano íntimo</option><option>Plano general narrativo</option><option>9:16 vertical</option><option>16:9 panorámico</option></select><ChevronDown size={15} /></div></div></div>
+                <div className="field-row"><div className="field-block"><label htmlFor="creative-mood">Atmósfera</label><input id="creative-mood" value={mood} onChange={(event) => setMood(event.target.value)} /></div><div className="field-block"><label htmlFor="creative-negative">Evitar / negative prompt</label><input id="creative-negative" value={negative} onChange={(event) => setNegative(event.target.value)} /></div></div>
+                <div className="safety-row"><div className="safety-copy"><ShieldCheck size={17} /><div><strong>Marco adulto responsable</strong><span>Solo personas adultas, consentimiento claro y tratamiento no explícito.</span></div></div><button className={adultSafe ? "toggle on" : "toggle"} onClick={() => setAdultSafe(!adultSafe)} aria-pressed={adultSafe} aria-label="Activar marco adulto responsable"><span /></button></div>
                 <div className="composer-actions"><button className="button primary" onClick={composePrompt}><WandSparkles size={16} /> Componer prompt <span className="button-key">⌘ ↵</span></button><button className="button ghost" onClick={savePreset}><Plus size={16} /> Guardar preset</button></div>
               </div>
 
               <div className="output-column">
-                <div className="output-card"><div className="card-topline"><div><span className="card-index">02</span><span className="card-kicker">ready to use</span></div><button className="copy-button" onClick={copyPrompt}>{copied ? <Check size={15} /> : <Clipboard size={15} />} {copied ? "copiado" : "copiar"}</button></div><div className="prompt-output">{prompt || <span className="output-placeholder">Tu prompt aparecerá aquí cuando compongas la idea.</span>}</div><div className="output-meta"><span><Zap size={14} /> optimizado para {media.toLowerCase()}</span><span>{prompt.length} caracteres</span></div></div>
+                <div className="output-card"><div className="card-topline"><div><span className="card-index">02</span><span className="card-kicker">ready to use</span></div><button className="copy-button" onClick={copyPrompt} disabled={!prompt}>{copied ? <Check size={15} /> : <Clipboard size={15} />} {copied ? "copiado" : "copiar"}</button></div><div className="prompt-output">{prompt || <span className="output-placeholder">Tu prompt aparecerá aquí cuando compongas la idea.</span>}</div><div className="output-meta"><span><Zap size={14} /> optimizado para {media.toLowerCase()}</span><span>{prompt.length} caracteres</span></div></div>
                 <div className="quick-card"><div className="quick-title"><span>Atajos de flujo</span><SlidersHorizontal size={15} /></div><button onClick={() => { setMood("Sensual, elegante, sugerente"); setNegative("menores, coerción, explícito, violencia, deformidades, artefactos"); flash("Tono sensual seguro aplicado"); }}><span className="quick-icon peach"><Sparkles size={15} /></span><span><b>Sensual sin cruzar límites</b><small>adulto · sugerente · no explícito</small></span><ArrowUpRight size={15} /></button><button onClick={() => { setStyle("Cinemático de alto contraste"); setFraming("9:16 vertical"); flash("Preset vertical aplicado"); }}><span className="quick-icon lilac"><Clapperboard size={15} /></span><span><b>Shot vertical para vídeo</b><small>cámara · movimiento · 9:16</small></span><ArrowUpRight size={15} /></button></div>
               </div>
             </section>
 
             <section className="tools-section"><div className="section-heading"><div><div className="eyebrow"><span className="eyebrow-line" /> según tu formato</div><h2>Abre y <em>prueba.</em></h2></div><button className="text-button" onClick={() => setSection("library")}>Ver directorio completo <ArrowUpRight size={15} /></button></div><div className="tool-grid">{visibleTools.map((tool) => <ToolCard key={tool.name} tool={tool} onOpen={() => flash(`Abriendo ${tool.name}`)} />)}</div></section>
 
-            <section className="bottom-row"><div className="saved-card"><div className="section-heading compact"><div><div className="eyebrow"><span className="eyebrow-line" /> tus presets</div><h2>Biblioteca <em>local.</em></h2></div><Library size={18} /></div>{saved.length === 0 ? <div className="empty-state"><FileText size={17} /><span>Aún no has guardado presets.<br /><small>Se quedarán en este navegador.</small></span></div> : <div className="preset-list">{saved.map((item) => <div className="preset-row" key={item.id}><span className="preset-dot" /><button type="button" disabled={item.legacy} title={item.legacy ? "Guardado antiguo: solo contiene el nombre" : "Cargar prompt y ajustes"} onClick={() => restorePreset(item)}>{item.name}{item.legacy ? " · solo nombre" : ""}</button><button type="button" aria-label={`Eliminar preset ${item.name}`} onClick={() => setSaved((current) => current.filter((entry) => entry.id !== item.id))}><Trash2 size={14} /></button></div>)}</div>}</div><div className="note-card"><div className="note-number">03</div><div><span className="card-kicker">nota de uso</span><h3>Gratis no siempre significa libre de límites.</h3><p>Antes de publicar, comprueba créditos, marca de agua, derechos comerciales y políticas de contenido de cada proveedor.</p><a href="https://help.openai.com/" target="_blank" rel="noreferrer">verifica siempre los términos <ExternalLink size={13} /></a></div></div></section>
+            <section className="bottom-row"><div className="saved-card"><div className="section-heading compact"><div><div className="eyebrow"><span className="eyebrow-line" /> tus presets</div><h2>Biblioteca <em>local.</em></h2></div><Library size={18} /></div>{storageError && <p role="alert" className="storage-warning">No se pueden guardar cambios en este navegador. Los presets actuales se perderán al cerrar la pestaña. Copia el prompt antes de salir.</p>}{saved.length === 0 ? <div className="empty-state"><FileText size={17} /><span>Aún no has guardado presets.<br /><small>Se quedarán en este navegador.</small></span></div> : <div className="preset-list">{saved.map((item) => <div className="preset-row" key={item.id}><span className="preset-dot" /><button type="button" disabled={item.legacy} title={item.legacy ? "Guardado antiguo: solo contiene el nombre" : "Cargar prompt y ajustes"} onClick={() => restorePreset(item)}>{item.name}{item.legacy ? " · solo nombre" : ""}</button><button type="button" aria-label={`Eliminar preset ${item.name}`} onClick={() => { const persisted = updateSaved(saved.filter((entry) => entry.id !== item.id)); flash(persisted ? "Preset eliminado" : "Eliminado solo en esta sesión: almacenamiento bloqueado"); }}><Trash2 size={14} /></button></div>)}</div>}</div><div className="note-card"><div className="note-number">03</div><div><span className="card-kicker">nota de uso</span><h3>Gratis no siempre significa libre de límites.</h3><p>Antes de publicar, comprueba créditos, marca de agua, derechos comerciales y políticas de contenido de cada proveedor.</p><a href="https://help.openai.com/" target="_blank" rel="noreferrer">verifica siempre los términos <ExternalLink size={13} /></a></div></div></section>
           </div>
         )}
       </main>
-      {toast && <div className="toast"><Check size={15} /> {toast}</div>}
+      {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </div>
   );
 }
