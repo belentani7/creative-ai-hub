@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { addPreset, decodePresets, type CreativePreset } from "@/lib/presets";
 import {
   ArrowUpRight,
   Check,
@@ -94,23 +95,25 @@ function Home() {
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [copied, setCopied] = useState(false);
   const [search, setSearch] = useState("");
-  const [saved, setSaved] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem("lucid-presets") || "[]"); } catch { return []; }
+  const [toolFilter, setToolFilter] = useState<MediaType | "Editor" | "Todos">("Todos");
+  const [saved, setSaved] = useState<CreativePreset[]>(() => {
+    try { return decodePresets(localStorage.getItem("lucid-presets")); } catch { return []; }
   });
   const [toast, setToast] = useState("");
 
   useEffect(() => {
-    localStorage.setItem("lucid-presets", JSON.stringify(saved));
+    try { localStorage.setItem("lucid-presets", JSON.stringify(saved)); }
+    catch { /* Storage may be disabled or full; the in-memory editor remains usable. */ }
   }, [saved]);
 
   const filteredTools = useMemo(() => {
     const query = search.toLowerCase().trim();
     return tools.filter((tool) => {
-      const matchesSection = section === "studio" ? true : section === "library" ? true : tool.category === media || tool.category === "Editor";
+      const matchesSection = section !== "library" || toolFilter === "Todos" || tool.category === toolFilter;
       const matchesSearch = !query || `${tool.name} ${tool.category} ${tool.descriptor}`.toLowerCase().includes(query);
       return matchesSection && matchesSearch;
     });
-  }, [search, section, media]);
+  }, [search, section, toolFilter]);
 
   const visibleTools = section === "studio" ? tools.filter((tool) => tool.category === media || (media === "Imagen" && tool.category === "Editor")).slice(0, 4) : filteredTools;
 
@@ -144,8 +147,26 @@ function Home() {
 
   const savePreset = () => {
     const name = `${media} · ${new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}`;
-    setSaved((current) => [name, ...current.filter((item) => item !== name)].slice(0, 6));
-    flash("Preset guardado en este navegador");
+    const newPreset: CreativePreset = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name, media, prompt, idea, style, framing, mood, negative, adultSafe,
+    };
+    setSaved((current) => addPreset(current, newPreset));
+    flash("Prompt y ajustes guardados en este navegador");
+  };
+
+  const restorePreset = (item: CreativePreset) => {
+    if (item.legacy) return;
+    setMedia(item.media);
+    setPrompt(item.prompt);
+    setIdea(item.idea);
+    setStyle(item.style);
+    setFraming(item.framing);
+    setMood(item.mood);
+    setNegative(item.negative);
+    setAdultSafe(item.adultSafe);
+    setSection("studio");
+    flash("Prompt y ajustes recuperados");
   };
 
   return (
@@ -188,7 +209,7 @@ function Home() {
         ) : section === "library" ? (
           <div className="page-wrap library-wrap">
             <div className="page-heading-row"><div><div className="eyebrow"><Layers3 size={14} /> herramientas externas</div><h1>Directorio <em>IA</em></h1><p>Una selección de puertas de entrada web. “Gratis” suele significar créditos, límites o cola.</p></div><div className="search-box"><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar proveedor..." /></div></div>
-            <div className="filter-row">{["Todos", "Imagen", "Vídeo", "Voz", "Música", "Editor"].map((item) => <button key={item} className={item === "Todos" || item === media ? "filter-chip selected" : "filter-chip"} onClick={() => item !== "Todos" && setMedia(item as MediaType)}>{item}</button>)}</div>
+            <div className="filter-row">{["Todos", "Imagen", "Vídeo", "Voz", "Música", "Editor"].map((item) => <button key={item} className={toolFilter === item ? "filter-chip selected" : "filter-chip"} aria-pressed={toolFilter === item} onClick={() => setToolFilter(item as MediaType | "Editor" | "Todos")}>{item}</button>)}</div>
             <div className="tool-grid library-grid">{filteredTools.map((tool) => <ToolCard key={tool.name} tool={tool} onOpen={() => flash(`Abriendo ${tool.name}`)} />)}</div>
           </div>
         ) : (
@@ -217,7 +238,7 @@ function Home() {
 
             <section className="tools-section"><div className="section-heading"><div><div className="eyebrow"><span className="eyebrow-line" /> según tu formato</div><h2>Abre y <em>prueba.</em></h2></div><button className="text-button" onClick={() => setSection("library")}>Ver directorio completo <ArrowUpRight size={15} /></button></div><div className="tool-grid">{visibleTools.map((tool) => <ToolCard key={tool.name} tool={tool} onOpen={() => flash(`Abriendo ${tool.name}`)} />)}</div></section>
 
-            <section className="bottom-row"><div className="saved-card"><div className="section-heading compact"><div><div className="eyebrow"><span className="eyebrow-line" /> tus presets</div><h2>Biblioteca <em>local.</em></h2></div><Library size={18} /></div>{saved.length === 0 ? <div className="empty-state"><FileText size={17} /><span>Aún no has guardado presets.<br /><small>Se quedarán en este navegador.</small></span></div> : <div className="preset-list">{saved.map((item) => <div className="preset-row" key={item}><span className="preset-dot" /><span>{item}</span><Trash2 size={14} onClick={() => setSaved((current) => current.filter((entry) => entry !== item))} /></div>)}</div>}</div><div className="note-card"><div className="note-number">03</div><div><span className="card-kicker">nota de uso</span><h3>Gratis no siempre significa libre de límites.</h3><p>Antes de publicar, comprueba créditos, marca de agua, derechos comerciales y políticas de contenido de cada proveedor.</p><a href="https://help.openai.com/" target="_blank" rel="noreferrer">verifica siempre los términos <ExternalLink size={13} /></a></div></div></section>
+            <section className="bottom-row"><div className="saved-card"><div className="section-heading compact"><div><div className="eyebrow"><span className="eyebrow-line" /> tus presets</div><h2>Biblioteca <em>local.</em></h2></div><Library size={18} /></div>{saved.length === 0 ? <div className="empty-state"><FileText size={17} /><span>Aún no has guardado presets.<br /><small>Se quedarán en este navegador.</small></span></div> : <div className="preset-list">{saved.map((item) => <div className="preset-row" key={item.id}><span className="preset-dot" /><button type="button" disabled={item.legacy} title={item.legacy ? "Guardado antiguo: solo contiene el nombre" : "Cargar prompt y ajustes"} onClick={() => restorePreset(item)}>{item.name}{item.legacy ? " · solo nombre" : ""}</button><button type="button" aria-label={`Eliminar preset ${item.name}`} onClick={() => setSaved((current) => current.filter((entry) => entry.id !== item.id))}><Trash2 size={14} /></button></div>)}</div>}</div><div className="note-card"><div className="note-number">03</div><div><span className="card-kicker">nota de uso</span><h3>Gratis no siempre significa libre de límites.</h3><p>Antes de publicar, comprueba créditos, marca de agua, derechos comerciales y políticas de contenido de cada proveedor.</p><a href="https://help.openai.com/" target="_blank" rel="noreferrer">verifica siempre los términos <ExternalLink size={13} /></a></div></div></section>
           </div>
         )}
       </main>
