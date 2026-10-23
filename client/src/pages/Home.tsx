@@ -19,7 +19,6 @@ import {
   PanelLeft,
   Plus,
   Search,
-  Settings2,
   ShieldCheck,
   Sparkles,
   SlidersHorizontal,
@@ -181,9 +180,9 @@ function Home() {
         <AppMark />
         <div className="side-label">Workspace</div>
         <nav className="side-nav" aria-label="Navegación principal">
-          <button className={section === "studio" ? "nav-item active" : "nav-item"} onClick={() => setSection("studio")}><WandSparkles size={17} /><span>Estudio</span><span className="nav-count">01</span></button>
-          <button className={section === "library" ? "nav-item active" : "nav-item"} onClick={() => setSection("library")}><Library size={17} /><span>Directorio IA</span><span className="nav-count">10</span></button>
-          <button className={section === "guide" ? "nav-item active" : "nav-item"} onClick={() => setSection("guide")}><FileText size={17} /><span>Guía rápida</span></button>
+          <button className={section === "studio" ? "nav-item active" : "nav-item"} aria-label="Ir al estudio" aria-current={section === "studio" ? "page" : undefined} onClick={() => setSection("studio")}><WandSparkles size={17} /><span>Estudio</span><span className="nav-count">01</span></button>
+          <button className={section === "library" ? "nav-item active" : "nav-item"} aria-label="Ir al directorio IA" aria-current={section === "library" ? "page" : undefined} onClick={() => setSection("library")}><Library size={17} /><span>Directorio IA</span><span className="nav-count">10</span></button>
+          <button className={section === "guide" ? "nav-item active" : "nav-item"} aria-label="Ir a la guía rápida" aria-current={section === "guide" ? "page" : undefined} onClick={() => setSection("guide")}><FileText size={17} /><span>Guía rápida</span></button>
         </nav>
         <div className="sidebar-spacer" />
         <div className="privacy-card">
@@ -197,7 +196,7 @@ function Home() {
         <header className="topbar">
           <div className="mobile-brand"><PanelLeft size={18} /><span>Lucid/Lab</span></div>
           <div className="breadcrumb"><span>Workspace</span><ChevronDown size={13} /><b>{section === "studio" ? "Estudio" : section === "library" ? "Directorio IA" : "Guía rápida"}</b></div>
-          <div className="top-actions"><span className="online"><span className="status-dot" /> sin conexión API</span><button className="icon-button" aria-label="Ajustes"><Settings2 size={18} /></button></div>
+          <div className="top-actions"><span className="online"><span className="status-dot" /> sin conexión API</span><button className="icon-button" aria-label="Abrir guía rápida" onClick={() => setSection("guide")}><FileText size={18} /></button></div>
         </header>
 
         {section === "guide" ? (
@@ -226,18 +225,18 @@ function Home() {
             </section>
 
             <section className="studio-grid">
-              <div className="composer-card">
+              <div className="composer-card" onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") { event.preventDefault(); composePrompt(); } }}>
                 <div className="card-topline"><div><span className="card-index">01</span><span className="card-kicker">creative brief</span></div><span className="autosave"><span className="status-dot" /> guardado manual de presets</span></div>
                 <div className="media-tabs">{mediaTypes.map(({ label, icon: Icon, accent, helper }) => <button key={label} className={media === label ? `media-tab active ${accent}` : "media-tab"} aria-pressed={media === label} onClick={() => selectMedia(label)}><Icon size={17} /><span>{label}</span><small>{helper}</small></button>)}</div>
                 <div className="field-block"><label htmlFor="creative-idea">Tu idea base</label><textarea id="creative-idea" value={idea} onChange={(event) => setIdea(event.target.value)} placeholder="Describe lo que quieres crear..." /></div>
                 <div className="field-row"><div className="field-block"><label htmlFor="creative-style">Dirección / estilo</label><div className="select-wrap"><select id="creative-style" value={style} onChange={(event) => setStyle(event.target.value)}><option>Editorial cinematográfico</option><option>Realismo naturalista</option><option>3D de autor</option><option>Anime sofisticado</option><option>Documental analógico</option></select><ChevronDown size={15} /></div></div><div className="field-block"><label htmlFor="creative-framing">Encuadre / formato</label><div className="select-wrap"><select id="creative-framing" value={framing} onChange={(event) => setFraming(event.target.value)}><option>Retrato / plano medio</option><option>Primer plano íntimo</option><option>Plano general narrativo</option><option>9:16 vertical</option><option>16:9 panorámico</option></select><ChevronDown size={15} /></div></div></div>
                 <div className="field-row"><div className="field-block"><label htmlFor="creative-mood">Atmósfera</label><input id="creative-mood" value={mood} onChange={(event) => setMood(event.target.value)} /></div><div className="field-block"><label htmlFor="creative-negative">Evitar / negative prompt</label><input id="creative-negative" value={negative} onChange={(event) => setNegative(event.target.value)} /></div></div>
                 <div className="safety-row"><div className="safety-copy"><ShieldCheck size={17} /><div><strong>Marco adulto responsable</strong><span>Solo personas adultas, consentimiento claro y tratamiento no explícito.</span></div></div><button className={adultSafe ? "toggle on" : "toggle"} onClick={() => setAdultSafe(!adultSafe)} aria-pressed={adultSafe} aria-label="Activar marco adulto responsable"><span /></button></div>
-                <div className="composer-actions"><button className="button primary" onClick={composePrompt}><WandSparkles size={16} /> Componer prompt <span className="button-key">⌘ ↵</span></button><button className="button ghost" onClick={savePreset}><Plus size={16} /> Guardar preset</button></div>
+                <div className="composer-actions"><button className="button primary" aria-keyshortcuts="Control+Enter Meta+Enter" onClick={composePrompt}><WandSparkles size={16} /> Componer prompt <span className="button-key">Ctrl/⌘ ↵</span></button><button className="button ghost" onClick={savePreset}><Plus size={16} /> Guardar preset</button></div>
               </div>
 
               <div className="output-column">
-                <div className="output-card"><div className="card-topline"><div><span className="card-index">02</span><span className="card-kicker">ready to use</span></div><button className="copy-button" onClick={copyPrompt} disabled={!prompt}>{copied ? <Check size={15} /> : <Clipboard size={15} />} {copied ? "copiado" : "copiar"}</button></div><div className="prompt-output">{prompt || <span className="output-placeholder">Tu prompt aparecerá aquí cuando compongas la idea.</span>}</div><div className="output-meta"><span><Zap size={14} /> optimizado para {media.toLowerCase()}</span><span>{prompt.length} caracteres</span></div></div>
+                <div className="output-card"><div className="card-topline"><div><span className="card-index">02</span><span className="card-kicker">ready to use</span></div><button className="copy-button" onClick={copyPrompt} disabled={!prompt}>{copied ? <Check size={15} /> : <Clipboard size={15} />} {copied ? "copiado" : "copiar"}</button></div><div className="prompt-output">{prompt || <span className="output-placeholder">Tu prompt aparecerá aquí cuando compongas la idea.</span>}</div><div className="output-meta"><span><Zap size={14} /> preparado para {media.toLowerCase()}</span><span>{prompt.length} caracteres</span></div></div>
                 <div className="quick-card"><div className="quick-title"><span>Atajos de flujo</span><SlidersHorizontal size={15} /></div><button onClick={() => { setMood("Sensual, elegante, sugerente"); setNegative("menores, coerción, explícito, violencia, deformidades, artefactos"); flash("Tono sensual seguro aplicado"); }}><span className="quick-icon peach"><Sparkles size={15} /></span><span><b>Sensual sin cruzar límites</b><small>adulto · sugerente · no explícito</small></span><ArrowUpRight size={15} /></button><button onClick={() => { setStyle("Cinemático de alto contraste"); setFraming("9:16 vertical"); flash("Preset vertical aplicado"); }}><span className="quick-icon lilac"><Clapperboard size={15} /></span><span><b>Shot vertical para vídeo</b><small>cámara · movimiento · 9:16</small></span><ArrowUpRight size={15} /></button></div>
               </div>
             </section>
