@@ -62,3 +62,15 @@ export function decodePresets(json: string | null): CreativePreset[] {
 export function addPreset(existing: CreativePreset[], preset: CreativePreset): CreativePreset[] {
   return [preset, ...existing.filter(item => item.id !== preset.id)].slice(0, MAX_SAVED);
 }
+
+/** A failed or oversized write must never be reported as durable storage. */
+export function persistPresets(storage: Pick<Storage, "setItem">, presets: CreativePreset[]): boolean {
+  try {
+    const serialized = JSON.stringify(presets);
+    if (serialized.length > MAX_STORAGE_CHARS) return false;
+    storage.setItem("lucid-presets", serialized);
+    return true;
+  } catch {
+    return false;
+  }
+}
