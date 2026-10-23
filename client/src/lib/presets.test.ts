@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addPreset, decodePresets, type CreativePreset } from "./presets";
+import { addPreset, decodePresets, persistPresets, type CreativePreset } from "./presets";
 
 const preset: CreativePreset = {
   id: "p1", name: "Imagen · 23 oct", media: "Imagen",
@@ -32,6 +32,27 @@ describe("creative preset storage", () => {
     const list = generated.reduce<CreativePreset[]>((current, item) => addPreset(current, item), []);
     expect(list.map(item => item.id)).toEqual(["7", "6", "5", "4", "3", "2"]);
     expect(addPreset(list, { ...preset, id: "4", name: "Updated" }).filter(p => p.id === "4")).toHaveLength(1);
+  });
+
+  it("persists and decodes a full preset without dropping editable fields", () => {
+    let stored = "";
+    const ok = persistPresets({ setItem: (key, value) => {
+      expect(key).toBe("lucid-presets");
+      stored = value;
+    } }, [preset]);
+    expect(ok).toBe(true);
+    expect(decodePresets(stored)).toEqual([preset]);
+  });
+
+  it("reports storage permission/quota failure instead of claiming persistence", () => {
+    expect(persistPresets({ setItem: () => { throw new Error("QuotaExceededError"); } }, [preset])).toBe(false);
+  });
+
+  it("rejects writes too large to be read back", () => {
+    let writes = 0;
+    const huge = { ...preset, prompt: "x".repeat(160001) };
+    expect(persistPresets({ setItem: () => { writes++; } }, [huge])).toBe(false);
+    expect(writes).toBe(0);
   });
 
   it("never interprets a legacy name as a recoverable creative prompt", () => {
