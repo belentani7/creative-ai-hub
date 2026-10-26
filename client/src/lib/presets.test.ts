@@ -60,4 +60,22 @@ describe("creative preset storage", () => {
     expect(records[0].legacy).toBe(true);
     expect(records[1].prompt).toBe(preset.prompt);
   });
+  it("keeps name-only legacy entries non-restorable after an explicit save", () => {
+    const legacy = decodePresets(JSON.stringify(["old name only"]));
+    let stored = "";
+    expect(persistPresets({ setItem: (_key, value) => { stored = value; } }, legacy)).toBe(true);
+    const restored = decodePresets(stored);
+    expect(restored).toHaveLength(1);
+    expect(restored[0].legacy).toBe(true);
+    expect(restored[0].prompt).toBe("");
+  });
+
+  it("refuses a successful-save message for data that reload would truncate", () => {
+    let writes = 0;
+    const storage = { setItem: () => { writes++; } };
+    expect(persistPresets(storage, [{ ...preset, prompt: "x".repeat(20_001) }])).toBe(false);
+    expect(persistPresets(storage, [{ ...preset, name: "n".repeat(121) }])).toBe(false);
+    expect(writes).toBe(0);
+  });
+
 });
