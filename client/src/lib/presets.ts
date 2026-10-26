@@ -54,6 +54,7 @@ export function decodePresets(json: string | null): CreativePreset[] {
       idea: String(p.idea).slice(0, 20_000), style: String(p.style).slice(0, 300),
       framing: String(p.framing).slice(0, 300), mood: String(p.mood).slice(0, 300),
       negative: String(p.negative).slice(0, 300), adultSafe: p.adultSafe,
+      ...(p.legacy === true ? { legacy: true } : {}),
     });
   }
   return result;
@@ -68,6 +69,15 @@ export function persistPresets(storage: Pick<Storage, "setItem">, presets: Creat
   try {
     const serialized = JSON.stringify(presets);
     if (serialized.length > MAX_STORAGE_CHARS) return false;
+    // Never claim durable, recoverable storage if decoding would truncate or drop fields.
+    const restored = decodePresets(serialized);
+    const fields: (keyof CreativePreset)[] = [
+      "id", "name", "media", "prompt", "idea", "style", "framing",
+      "mood", "negative", "adultSafe", "legacy",
+    ];
+    if (restored.length !== presets.length || restored.some((item, index) =>
+      fields.some(key => item[key] !== presets[index][key])
+    )) return false;
     storage.setItem("lucid-presets", serialized);
     return true;
   } catch {
