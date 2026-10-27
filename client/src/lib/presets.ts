@@ -30,12 +30,28 @@ export function decodePresets(json: string | null): CreativePreset[] {
   }
   if (!Array.isArray(input)) return [];
   const result: CreativePreset[] = [];
-  for (const item of input.slice(0, MAX_SAVED)) {
+  const usedIds = new Set<string>();
+  // A damaged/legacy store can contain duplicate IDs. Keep every valid entry
+  // independently addressable so deleting one preset never deletes another.
+  const uniqueId = (raw: string): string => {
+    const base = raw.slice(0, 120);
+    let id = base;
+    let suffix = 1;
+    while (usedIds.has(id)) {
+      const tail = `-${suffix++}`;
+      id = `${base.slice(0, 120 - tail.length)}${tail}`;
+    }
+    usedIds.add(id);
+    return id;
+  };
+  // Ignore malformed entries without hiding valid presets after them.
+  for (const item of input) {
+    if (result.length >= MAX_SAVED) break;
     if (typeof item === "string") {
       // Preserve the historical labels without claiming their missing bodies were saved.
       if (!item.trim()) continue;
       result.push({
-        id: `legacy-${result.length}`, name: item.slice(0, 120), media: "Imagen",
+        id: uniqueId(`legacy-${result.length}`), name: item.slice(0, 120), media: "Imagen",
         prompt: "", idea: "", style: "", framing: "", mood: "", negative: "",
         adultSafe: true, legacy: true,
       });
@@ -43,13 +59,13 @@ export function decodePresets(json: string | null): CreativePreset[] {
     }
     if (!item || typeof item !== "object") continue;
     const p = item as Record<string, unknown>;
-    if (typeof p.id !== "string" || !p.id || typeof p.name !== "string" ||
+    if (typeof p.id !== "string" || !p.id.trim() || typeof p.name !== "string" || !p.name.trim() ||
         !media.includes(p.media as CreativeMedia) ||
         !["prompt", "idea", "style", "framing", "mood", "negative"].every(
           key => typeof p[key] === "string"
         ) || typeof p.adultSafe !== "boolean") continue;
     result.push({
-      id: p.id.slice(0, 120), name: p.name.slice(0, 120),
+      id: uniqueId(p.id), name: p.name.slice(0, 120),
       media: p.media as CreativeMedia, prompt: String(p.prompt).slice(0, 20_000),
       idea: String(p.idea).slice(0, 20_000), style: String(p.style).slice(0, 300),
       framing: String(p.framing).slice(0, 300), mood: String(p.mood).slice(0, 300),

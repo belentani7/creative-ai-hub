@@ -77,5 +77,31 @@ describe("creative preset storage", () => {
     expect(persistPresets(storage, [{ ...preset, name: "n".repeat(121) }])).toBe(false);
     expect(writes).toBe(0);
   });
+  it("recovers valid presets even when earlier stored entries are malformed", () => {
+    const records = decodePresets(JSON.stringify([null, 123, false, {}, [], null, preset]));
+    expect(records).toEqual([preset]);
+  });
+
+  it("keeps duplicate stored IDs independently removable without losing prompts", () => {
+    const records = decodePresets(JSON.stringify([
+      preset, { ...preset, name: "Second", prompt: "Second prompt" },
+    ]));
+    expect(records).toHaveLength(2);
+    expect(records[0].id === records[1].id).toBe(false);
+    const remaining = records.filter(item => item.id !== records[0].id);
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].prompt).toBe("Second prompt");
+    let stored = "";
+    expect(persistPresets({ setItem: (_key, value) => { stored = value; } }, records)).toBe(true);
+    expect(decodePresets(stored)).toEqual(records);
+  });
+
+  it("does not confuse historical labels with modern IDs", () => {
+    const records = decodePresets(JSON.stringify(["old", { ...preset, id: "legacy-0" }]));
+    expect(records).toHaveLength(2);
+    expect(records[0].id === records[1].id).toBe(false);
+    expect(records[0].legacy).toBe(true);
+    expect(records[1].prompt).toBe(preset.prompt);
+  });
 
 });
