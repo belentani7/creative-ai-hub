@@ -1,0 +1,27 @@
+{
+  "defaultPrompt": "Create a polished editorial image of an adult protagonist in a warm amber studio, confident gaze, intimate but non-explicit mood, cinematic softbox lighting, 50mm lens, shallow depth of field, premium independent magazine cover aesthetic. Preserve adult age, clear consent, tasteful styling, natural anatomy and realistic hands. Avoid minors, coercion, explicit sexual acts, nudity, fetishized violence, identity imitation, extra fingers, text artifacts, watermark.",
+  "starterIdeas": {
+    "Imagen": "Retrato editorial de una protagonista adulta en un estudio de luz ámbar, mirada segura, estética de portada independiente",
+    "Vídeo": "Una protagonista adulta cruza un pasillo de hotel con luz de neón y se detiene frente a cámara",
+    "Voz": "Una narradora presenta el primer capítulo de una ficción sonora nocturna, íntima y elegante",
+    "Música": "Un disco conceptual de pop alternativo nocturno sobre deseo, autonomía y una ciudad que no duerme"
+  },
+  "mediaTypes": [
+    { "label": "Imagen", "accent": "peach", "helper": "escena, personaje, producto" },
+    { "label": "Vídeo", "accent": "lilac", "helper": "shot, movimiento, cámara" },
+    { "label": "Voz", "accent": "mint", "helper": "locución, doblaje, narración" },
+    { "label": "Música", "accent": "blue", "helper": "tema, disco, identidad sonora" }
+  ],
+  "tools": [
+    { "name": "Hailuo / MiniMax", "category": "Vídeo", "descriptor": "Text-to-video e image-to-video", "detail": "Clips cortos con movimiento humano y prompts cinematográficos.", "badge": "Créditos gratis", "badgeTone": "lilac", "url": "https://hailuoai.video/", "note": "La cuota, duración y marca de agua dependen de la región y del plan." },
+    { "name": "Kling AI", "category": "Vídeo", "descriptor": "Movimiento y consistencia", "detail": "Buena opción para probar cámara, acción y continuidad de personaje.", "badge": "Free tier", "badgeTone": "peach", "url": "https://klingai.com/", "note": "Puede haber cola y límites diarios en el nivel gratuito." },
+    { "name": "Pika", "category": "Vídeo", "descriptor": "Efectos y transformaciones", "detail": "Útil para clips breves, estilizados y efectos visuales rápidos.", "badge": "Créditos iniciales", "badgeTone": "mint", "url": "https://pika.art/", "note": "Revisa licencia y marca de agua antes de uso comercial." },
+    { "name": "Leonardo AI", "category": "Imagen", "descriptor": "Imagen y edición generativa", "detail": "Explora estilos, referencias y variaciones desde el navegador.", "badge": "Free tier", "badgeTone": "mint", "url": "https://leonardo.ai/", "note": "Las generaciones gratuitas y los derechos dependen del plan." },
+    { "name": "Ideogram", "category": "Imagen", "descriptor": "Texto dentro de imágenes", "detail": "Especialmente práctico para carteles, portadas y conceptos visuales.", "badge": "Créditos gratis", "badgeTone": "peach", "url": "https://ideogram.ai/", "note": "Consulta el plan actual y las condiciones de publicación." },
+    { "name": "Adobe Firefly", "category": "Editor", "descriptor": "Generar, rellenar y editar", "detail": "Editor web para retoque, composición y creación asistida.", "badge": "Prueba gratis", "badgeTone": "blue", "url": "https://firefly.adobe.com/", "note": "Puede pedir cuenta Adobe y limitar créditos generativos." },
+    { "name": "ElevenLabs", "category": "Voz", "descriptor": "Texto a voz y clonación", "detail": "Locuciones, idiomas y voces personalizadas para tus proyectos.", "badge": "Free tier", "badgeTone": "blue", "url": "https://elevenlabs.io/", "note": "Clona solamente tu voz o una voz con autorización explícita." },
+    { "name": "MiniMax Voice", "category": "Voz", "descriptor": "Clonación desde una muestra", "detail": "Prueba de voz con una grabación limpia y corta.", "badge": "Prueba limitada", "badgeTone": "lilac", "url": "https://www.minimax.io/audio/voices-cloning", "note": "La página indica muestras de 10–60 s; la disponibilidad cambia." },
+    { "name": "Suno", "category": "Música", "descriptor": "Canciones completas", "detail": "Ideas de temas, demos y discos conceptuales desde un prompt.", "badge": "Créditos diarios", "badgeTone": "peach", "url": "https://suno.com/", "note": "Revisa el uso comercial, la atribución y la licencia del plan." },
+    { "name": "Udio", "category": "Música", "descriptor": "Composición y estilos", "detail": "Bocetos musicales y exploración de géneros con letra propia.", "badge": "Free tier", "badgeTone": "mint", "url": "https://www.udio.com/", "note": "Los límites y permisos para exportar pueden cambiar." }
+  ]
+}
